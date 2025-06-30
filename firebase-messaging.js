@@ -1,0 +1,1 @@
+// Firebase Messaging JS (simulado)

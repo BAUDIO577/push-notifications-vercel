@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Super Borreguito</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="firebase-app.js"></script>
+  <script src="firebase-messaging.js"></script>
+</head>
+<body style="background:#e8fbe5; text-align:center; font-family:sans-serif; padding:2rem;">
+  <h1>🐑 Ofertas del Super Borreguito</h1>
+  <button id="activar" style="background:#4CAF50;color:#fff;padding:1em;border:none;border-radius:6px;">🔔 Ver Ofertas</button>
+  <p id="status"></p>
+  <script>
+    const status = document.getElementById("status");
+    document.getElementById("activar").addEventListener("click", async () => {
+      status.innerText = "🕐 Activando...";
+      try {
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') {
+          status.innerText = "❌ Notificaciones denegadas.";
+          return;
+        }
+        const token = "demo_token_" + Math.random().toString(36).slice(2);
+        console.log("Token generado:", token);
+        status.innerText = "✅ Ya estás suscripto a las ofertas.";
+      } catch (error) {
+        console.error(error);
+        status.innerText = "❌ Error al suscribirte.";
+      }
+    });
+  </script>
+</body>
+</html>
