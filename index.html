@@ -1,35 +1,107 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Super Borreguito</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="firebase-app.js"></script>
-  <script src="firebase-messaging.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-messaging-compat.js"></script>
+
+  <style>
+    :root { --verde:#e8fbe5; --gris:#555; }
+    body{
+      margin:0; min-height:100vh; display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+      background:var(--verde); font-family:sans-serif; text-align:center; padding:2rem;
+    }
+    #logo{ width:60%; max-width:230px; height:auto; }
+    .spacer{ height:28px; }
+    #activar{
+      background:#4CAF50; color:#fff; padding:1em 1.4em;
+      border:none; border-radius:6px; font-size:1rem; cursor:pointer;
+    }
+    #status{ color:var(--gris); margin-top:1rem; }
+  </style>
 </head>
-<body style="background:#e8fbe5; text-align:center; font-family:sans-serif; padding:2rem;">
-  <h1>🐑 Ofertas del Super Borreguito</h1>
-  <button id="activar" style="background:#4CAF50;color:#fff;padding:1em;border:none;border-radius:6px;">🔔 Ver Ofertas</button>
+<body>
+
+  <!-- Logotipo centrado -->
+  <img id="logo" src="logo.png" alt="Borreguito — Gracias por elegirnos">
+  <div class="spacer"></div>
+
+  <!-- Botón para solicitar notificaciones -->
+  <button id="activar">🔔 Ver Ofertas</button>
   <p id="status"></p>
+
   <script>
-    const status = document.getElementById("status");
-    document.getElementById("activar").addEventListener("click", async () => {
-      status.innerText = "🕐 Activando...";
-      try {
-        const permiso = await Notification.requestPermission();
-        if (permiso !== 'granted') {
-          status.innerText = "❌ Notificaciones denegadas.";
-          return;
-        }
-        const token = "demo_token_" + Math.random().toString(36).slice(2);
-        console.log("Token generado:", token);
-        status.innerText = "✅ Ya estás suscripto a las ofertas.";
-      } catch (error) {
-        console.error(error);
-        status.innerText = "❌ Error al suscribirte.";
+  // ------------- CONFIGURA TUS CLAVES -----------------
+  const firebaseConfig = {
+    apiKey:            "TU_API_KEY",
+    authDomain:        "TU_PROYECTO.firebaseapp.com",
+    projectId:         "TU_PROYECTO",
+    storageBucket:     "TU_PROYECTO.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId:             "TU_APP_ID",
+    vapidKey:          "TU_VAPID_KEY"
+  };
+  // ----------------------------------------------------
+
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
+
+  const DESTINO_FINAL = "https://borreguito.com.ar/";
+  const status  = document.getElementById('status');
+  const btn     = document.getElementById('activar');
+
+  /* Redirige después de 10 s al dominio fijo */
+  function liberarNavegacion() {
+    status.textContent = "¡Listo! Redirigiendo…";
+    setTimeout(() => location.href = DESTINO_FINAL, 10_000); // 10 000 ms
+  }
+
+  /* Comprueba si ya existe un token guardado */
+  async function hayToken() {
+    if (Notification.permission !== 'granted') return false;
+    try {
+      const tkn = await messaging.getToken({ vapidKey: firebaseConfig.vapidKey });
+      return !!tkn;
+    } catch { return false; }
+  }
+
+  /* --------- Al cargar la página --------- */
+  (async () => {
+    if (await hayToken()) {
+      btn.style.display = 'none';
+      status.textContent = "Token encontrado. Acceso en 10 s…";
+      liberarNavegacion();
+    } else {
+      status.textContent = "Activa las notificaciones para ver las ofertas.";
+    }
+  })();
+
+  /* --------- Al pulsar el botón --------- */
+  btn.addEventListener('click', async () => {
+    status.textContent = "🕐 Activando…";
+    try {
+      const permiso = await Notification.requestPermission();
+      if (permiso !== 'granted') {
+        status.textContent = "❌ Notificaciones denegadas.";
+        return;
       }
-    });
+
+      // En producción registra tu service-worker antes de pedir token
+      const token = await messaging.getToken({ vapidKey: firebaseConfig.vapidKey });
+      console.log("Token generado:", token);
+
+      status.textContent = "✅ Suscripción realizada. Accediendo en 10 s…";
+      liberarNavegacion();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "❌ Error al suscribirte.";
+    }
+  });
   </script>
 </body>
 </html>
